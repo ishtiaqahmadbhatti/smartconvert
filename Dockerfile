@@ -19,7 +19,7 @@ RUN npm run build -- --configuration production
 FROM nginx:alpine
 
 # Copy built assets from build stage
-COPY --from=build /app/dist/your-project-name /usr/share/nginx/html
+COPY --from=build /app/dist/smartconvert /usr/share/nginx/html
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
