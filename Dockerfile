@@ -1,31 +1,35 @@
-# Stage 1: Build the Angular app
-FROM node:18-alpine as build
+# Stage 1: Build the Angular application
+FROM node:20 as build-stage
 
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files
 COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy all files
+# Copy source files
 COPY . .
 
-# Build the app
-RUN npm run build -- --configuration production
+# Build both client and server bundles
+RUN npm run build -- --configuration=production
 
-# Stage 2: Serve the app using Nginx
-FROM nginx:alpine
+# Stage 2: Serve the application with SSR
+FROM node:20-alpine
 
-# Copy built assets from build stage
-COPY --from=build /app/dist/smartconvert /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built files from build-stage
+COPY --from=build-stage /app/dist/smartconvert /app/dist/smartconvert
+COPY --from=build-stage /app/dist/smartconvert/server /app/dist/server
+COPY --from=build-stage /app/package.json /app/
 
-# Expose port 80
-EXPOSE 80
+# Install production dependencies only
+RUN npm install --omit=dev
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Expose port 4000 (or your preferred port)
+EXPOSE 4000
+
+# Start the SSR server
+CMD ["node", "dist/server/main.js"]
